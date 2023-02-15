@@ -21,9 +21,12 @@ Publish rate:
 import rospy
 from std_msgs.msg import Float32
 from sensor_msgs.msg import LaserScan
+from ros_exercises.msg import OpenSpace
 
-pub_dis = rospy.Publisher("open_space/distance", Float32, queue_size=10)
-pub_ang = rospy.Publisher("open_space/angle", Float32, queue_size=10)
+#pub_dis = rospy.Publisher("open_space/distance", Float32, queue_size=10)
+#pub_ang = rospy.Publisher("open_space/angle", Float32, queue_size=10)
+
+pub = rospy.Publisher("open_space", OpenSpace, queue_size=10)
 
 def callback(data):
     scan  = data
@@ -36,8 +39,10 @@ def callback(data):
     max_idx = ranges.index(max_range)
     angle = angle_min + angle_incremental * max_idx
 
-    pub_ang.publish(angle)
-    pub_dis.publish(max_range)
+    openspace = OpenSpace()
+    openspace.angle = angle
+    openspace.distance = max_range
+    pub.publish(openspace)
 
 def listener():
     rospy.init_node("open_space_publisher")
