@@ -22,8 +22,8 @@ import rospy
 from std_msgs.msg import Float32
 from sensor_msgs.msg import LaserScan
 
-pub_dis = rospy.Publisher("open_space/distance", Float32)
-pub_ang = rospy.Publisher("open_space/angle", Float32)
+pub_dis = rospy.Publisher("open_space/distance", Float32, queue_size=10)
+pub_ang = rospy.Publisher("open_space/angle", Float32, queue_size=10)
 
 def callback(data):
     scan  = data
