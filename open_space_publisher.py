@@ -1,4 +1,4 @@
-#!/user/bin/env python
+#!/usr/bin/env python
 
 """
 Description: 
@@ -31,7 +31,7 @@ def callback(data):
     angle_min = scan.angle_min
     angle_incremental = scan.angle_increment
     ranges = scan.ranges
-    
+
     max_range = max(ranges)
     max_idx = ranges.index(max_range)
     angle = angle_min + angle_incremental * max_idx
