@@ -26,9 +26,8 @@ from ros_exercises.msg import OpenSpace
 #pub_dis = rospy.Publisher("open_space/distance", Float32, queue_size=10)
 #pub_ang = rospy.Publisher("open_space/angle", Float32, queue_size=10)
 
-pub = rospy.Publisher("open_space", OpenSpace, queue_size=10)
 
-def callback(data):
+def callback(data, pub):
     scan  = data
 
     angle_min = scan.angle_min
@@ -44,10 +43,15 @@ def callback(data):
     openspace.distance = max_range
     pub.publish(openspace)
 
-def listener():
+def listener(subscriber_topic, publisher_topic):
     rospy.init_node("open_space_publisher")
-    rospy.Subscriber("fake_scan", LaserScan, callback)
+    pub = rospy.Publisher(publisher_topic, OpenSpace, queue_size=10)
+    rospy.Subscriber(subscriber_topic, LaserScan, callback, pub)
     rospy.spin()
 
 if __name__ == '__main__':
-    listener()
+
+    subscriber_topic = rospy.get_param("Subscriber topic", "fake_scan")
+    publisher_topic = rospy.get_param("Publisher topic", "open_space")
+
+    listener(subscriber_topic, publisher_topic)
