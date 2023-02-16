@@ -63,26 +63,33 @@ def dynamic_publisher():
         
         # Initialize a transform object
         left_transform = TransformStamped()
+        right_left_transform = TransformStamped()
         
         # Add a timestamp
         left_transform.header.stamp = rospy.Time.now()
+        right_left_transform.header.stamp = rospy.Time.now()
 
         # Add the source and target frame
-        left_transform.header.frame_id = "world"
-        left_transform.child_frame_id = "left_cam"
+        left_transform.header.frame_id = "world"    # parent & target frame
+        left_transform.child_frame_id = "left_cam"  # child & source frame
+        right_left_transform.header.frame_id = "left_cam"   # parent & target frame
+        right_left_transform.child_frame_id = "right_cam"   # child & source frame
 
         # Add the translation
         left_transform.transform.translation = left_world_matrix[:, -1][:-1]
+        right_left_transform.transform.translation = right_left_matrix[:, -1][:-1]
 
         # Add the rotation
         left_transform.transform.rotation = quaternion_from_matrix(left_world_matrix[:, :3][:3, :])
+        right_left_transform.transform.rotation = quaternion_from_matrix(right_left_matrix[:, :3][:3, :])
 
         # Send the transform
         broadcaster.sendTransform(left_transform)
+        broadcaster.sendTransform(right_left_transform)
 
         r.sleep()
 
 
 if __name__ == '__main__':
-    
+    dynamic_publisher()
 
