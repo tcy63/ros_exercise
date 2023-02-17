@@ -23,14 +23,17 @@ def dynamic_publisher():
     while not rospy.is_shutdown():
 
         # Fetch the transform
-        transform = tfBuffer.lookup_transform("world", "base_link_gt", rospy.Time())   # target frame, source fram, time
-
-        base_translation = transform.translation
-        base_rotation = transform.rotation # quaternion
-        base_rotation_matrix = quaternion_matrix(base_rotation)
+        trans = tfBuffer.lookup_transform("world", "base_link_gt", rospy.Time(), rospy.Duration(2.0))   # target frame, source fram, time
+        
+        transform = trans.transform
+        base_vect = transform.translation    # a Vector3 object
+        base_translation = [base_vect.x, base_vect.y, base_vect.z]
+        base_quat = transform.rotation # a Quaternion object
+        base_rotation = [base_quat.x, base_quat.y, base_quat.z, base_quat.w]
+        base_rotation_matrix = quaternion_matrix(base_rotation)[:, :3][:3, :]
         
         # Construct the transform matrix from world to base_link_gt
-        base_world_matrix = np.vstack((np.hstack((base_rotation_matrix, base_translation.reshape(-1, 1))), [0, 0, 0, 1]))
+        base_world_matrix = np.vstack((np.hstack((base_rotation_matrix, np.array(base_translation)[:, np.newaxis])), [0, 0, 0, 1]))
 
         # Construct the transform matrix from base_link_gt to cameras
         left_base_matrix = np.array(
@@ -76,12 +79,28 @@ def dynamic_publisher():
         right_left_transform.child_frame_id = "right_cam"   # child & source frame
 
         # Add the translation
-        left_transform.transform.translation = left_world_matrix[:, -1][:-1]
-        right_left_transform.transform.translation = right_left_matrix[:, -1][:-1]
+        left_world_translation = left_world_matrix[:, -1][:-1]
+        left_transform.transform.translation.x = left_world_translation[0]
+        left_transform.transform.translation.y = left_world_translation[1]
+        left_transform.transform.translation.z = left_world_translation[2]
+
+        right_left_translation = right_left_matrix[:, -1][:-1]
+        right_left_transform.transform.translation.x = right_left_translation[0]
+        right_left_transform.transform.translation.y = right_left_translation[1]
+        right_left_transform.transform.translation.z = right_left_translation[2]
 
         # Add the rotation
-        left_transform.transform.rotation = quaternion_from_matrix(left_world_matrix[:, :3][:3, :])
-        right_left_transform.transform.rotation = quaternion_from_matrix(right_left_matrix[:, :3][:3, :])
+        left_world_quat = quaternion_from_matrix(left_world_matrix)
+        left_transform.transform.rotation.x = left_world_quat[0]
+        left_transform.transform.rotation.y = left_world_quat[1]
+        left_transform.transform.rotation.z = left_world_quat[2]
+        left_transform.transform.rotation.w = left_world_quat[3]
+
+        right_left_quat = quaternion_from_matrix(right_left_matrix)
+        right_left_transform.transform.rotation.x = right_left_quat[0]
+        right_left_transform.transform.rotation.y = right_left_quat[1]
+        right_left_transform.transform.rotation.z = right_left_quat[2]
+        right_left_transform.transform.rotation.w = right_left_quat[3]
 
         # Send the transform
         broadcaster.sendTransform(left_transform)
