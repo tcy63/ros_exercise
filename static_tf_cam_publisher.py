@@ -5,18 +5,19 @@ import tf
 import tf2_ros
 
 from tf.transformations import quaternion_from_matrix
-from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
+from tf2_ros import StaticTransformBroadcaster
 
 from geometry_msgs.msg import TransformStamped
 
 import numpy as np
 
 def make_transforms(source_frame, target_frame, transform_matrix):
+
     t = TransformStamped()
 
     t.header.stamp = rospy.Time.now()
     t.header.frame_id = target_frame
-    t.child_fram_id = source_frame
+    t.child_frame_id = source_frame
 
     trans = transform_matrix[:, -1][:-1]
     t.transform.translation.x = trans[0]
@@ -35,7 +36,7 @@ def make_transforms(source_frame, target_frame, transform_matrix):
 def main():
     rospy.init_node("static_tf_cam_publisher.py")
 
-    static_broadcaster = StaticTransformBroadcaster()
+    broadcaster = StaticTransformBroadcaster()
 
     left_base_matrix = np.array(
         [
@@ -57,7 +58,9 @@ def main():
     )
     right_base_trans = make_transforms('right_cam', 'base_link_gt', right_base_matrix)
 
-    static_broadcaster.sendTransform(left_base_trans)
-    static_broadcaster.sendTransform(right_base_trans)
+    broadcaster.sendTransform([left_base_trans, right_base_trans])
     
     rospy.spin()
+
+if __name__ == '__main__':
+    main()
