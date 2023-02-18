@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
-import rosbag
 import rospy
 import tf
 import tf2_ros
+
+from tf.transformations import quaternion_matrix, quaternion_from_matrix, translation_matrix, concatenate_matrices
+from geometry_msgs.msg import TransformStamped
+
 import numpy as np
 
-from tf.transformations import quaternion_matrix, quaternion_from_matrix
-
-from geometry_msgs.msg import TransformStamped
-from tf2_msgs.msg import TFMessage
 
 def dynamic_publisher():
     rospy.init_node("dynamic_tf_cam_publisher.py")
@@ -21,21 +20,27 @@ def dynamic_publisher():
     r = rospy.Rate(10)
 
     while not rospy.is_shutdown():
-
         # Fetch the transform
-        trans = tfBuffer.lookup_transform("world", "base_link_gt", rospy.Time(), rospy.Duration(2.0))   # target frame, source fram, time
-        
-        transform = trans.transform
-        base_vect = transform.translation    # a Vector3 object
-        base_translation = [base_vect.x, base_vect.y, base_vect.z]
-        base_quat = transform.rotation # a Quaternion object
-        base_rotation = [base_quat.x, base_quat.y, base_quat.z, base_quat.w]
-        base_rotation_matrix = quaternion_matrix(base_rotation)[:, :3][:3, :]
-        
-        # Construct the transform matrix from world to base_link_gt
-        base_world_matrix = np.vstack((np.hstack((base_rotation_matrix, np.array(base_translation)[:, np.newaxis])), [0, 0, 0, 1]))
+        try:
+            trans = tfBuffer.lookup_transform("world", "base_link_gt", rospy.Time.now())   # target frame, source fram, time
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            r.sleep()
+            continue
 
-        # Construct the transform matrix from base_link_gt to cameras
+        transform = trans.transform
+        
+        # Create the translation matrix
+        base_vect = transform.translation    # a Vector3 object
+        base_translation_matrix = translation_matrix([base_vect.x, base_vect.y, base_vect.z])
+
+        # Create the rotation matrix
+        base_quat = transform.rotation # a Quaternion object
+        base_rotation_matrix = quaternion_matrix([base_quat.x, base_quat.y, base_quat.z, base_quat.w])
+        
+        # Construct the transform matrix of base_link_gt w.r.t world
+        base_world_matrix = concatenate_matrices(base_translation_matrix, base_rotation_matrix)
+
+        # Construct the transform matrix of left_cam w.r.t base_link_gt
         left_base_matrix = np.array(
                 [
                     [1, 0, 0, -0.05],
@@ -43,10 +48,12 @@ def dynamic_publisher():
                     [0, 0, 1, 0],
                     [0, 0, 0, 1]
                 ]
-            )
+        )
 
+        # Construct the transform matrix of base_link_gt w.r.t left_cam
         base_left_matrix = np.linalg.inv(left_base_matrix)
 
+        # Construct the transform matrix of right_cam w.r.t base_link_gt
         right_base_matrix = np.array(
                 [
                     [1, 0, 0, 0.05],
@@ -57,9 +64,10 @@ def dynamic_publisher():
             )
 
         # Compose the tranform matrices
-        left_world_matrix = np.matmul(left_base_matrix, base_world_matrix)
-
-        right_left_matrix = np.matmul(right_base_matrix, base_left_matrix)
+        # The transform matrix of left_cam w.r.t world is composed of base_link_gt w.r.t world and left_cam w.r.t base_link_gt
+        left_world_matrix = concatenate_matrices(base_world_matrix, left_base_matrix)
+        # The transform matrix of right_cam w.r.t left_cam is composed of base_link_gt w.r.t left_cam and right_cam w.r.t base_link_gt
+        right_left_matrix = concatenate_matrices(base_left_matrix, right_base_matrix)
         
         # Broadcast the transforms to the TF tree
         broadcaster = tf2_ros.TransformBroadcaster()
