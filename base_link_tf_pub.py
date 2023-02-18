@@ -20,14 +20,16 @@ def main():
     while not rospy.is_shutdown():
         try:
             left_world_trans = tfBuffer.lookup_transform("world", "left_cam", rospy.Time.now())
-            rospy.loginfo("try to look up for transform at %s", rospy.Time.now())
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             rate.sleep()
             continue
         
         t = tf.TransformerROS()
+        translation = [left_world_trans.transform.translation.x, left_world_trans.transform.translation.y, left_world_trans.transform.translation.z]
+        rotation = [left_world_trans.transform.rotation.x, left_world_trans.transform.rotation.y, left_world_trans.transform.rotation.z, left_world_trans.transform.rotation.w]
 
-        left_world_matrix = t.fromTranslationRotation(left_world_trans.transform.translation, left_world_trans.transform.rotation)
+        left_world_matrix = t.fromTranslationRotation(translation, rotation)
+        
         left_base_matrix = np.array(
             [
                 [1, 0, 0, -0.05],
