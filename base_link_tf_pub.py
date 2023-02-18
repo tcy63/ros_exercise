@@ -30,20 +30,15 @@ def main():
 
         left_world_matrix = t.fromTranslationRotation(translation, rotation)
 
-        left_base_matrix = np.array(
-            [
-                [1, 0, 0, -0.05],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1]
-            ]
-        )
-        base_left_matrix = np.linalg.inv(left_base_matrix)
+        
+        translation = [0.05, 0, 0]
+        rotation = [0, 0, 0, 1]
 
-    
+        base_left_matrix = t.fromTranslationRotation(translation, rotation)
+
         # Compose transforms
-        base_world_matrix = np.matmul(base_left_matrix, left_world_matrix)
-
+        base_world_matrix = np.matmul(left_world_matrix, base_left_matrix)
+        
         # Create a broadcaster for the transform from base_link_gt to world
         broadcaster = tf2_ros.TransformBroadcaster()
 
