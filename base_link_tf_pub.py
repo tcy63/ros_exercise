@@ -11,13 +11,18 @@ import numpy as np
 
 def main():
     rospy.init_node("base_link_tf_pub.py")
-    
+    rate = rospy.Rate(10.0)
+
     tfBuffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tfBuffer)
 
     while not rospy.is_shutdown():
-        left_world_trans = tfBuffer.lookup_transform("world", "left_cam", rospy.Time(), rospy.Duration(2.0))
-
+        try:
+            left_world_trans = tfBuffer.lookup_transform("world", "left_cam", rospy.Time(), rospy.Duration(2.0))
+        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException):
+            rate.sleep()
+            continue
+        
         left_world_quat = left_world_trans.transform.rotation
         left_world_rotation = [left_world_quat.x, left_world_quat.y, left_world_quat.z, left_world_quat.w]
         left_world_matrix = quaternion_matrix(left_world_rotation)
