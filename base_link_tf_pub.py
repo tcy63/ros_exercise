@@ -16,18 +16,18 @@ def main():
     tfBuffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tfBuffer)
 
+    
     while not rospy.is_shutdown():
         try:
-            left_world_trans = tfBuffer.lookup_transform("world", "left_cam", rospy.Time(), rospy.Duration(2.0))
-        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException):
+            left_world_trans = tfBuffer.lookup_transform("world", "left_cam", rospy.Time.now())
+            rospy.loginfo("try to look up for transform at %s", rospy.Time.now())
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             rate.sleep()
             continue
         
-        left_world_quat = left_world_trans.transform.rotation
-        left_world_rotation = [left_world_quat.x, left_world_quat.y, left_world_quat.z, left_world_quat.w]
-        left_world_matrix = quaternion_matrix(left_world_rotation)
-        world_left_matrix = np.linalg.inv(left_world_matrix)
+        t = tf.TransformerROS()
 
+        left_world_matrix = t.fromTranslationRotation(left_world_trans.transform.translation, left_world_trans.transform.rotation)
         left_base_matrix = np.array(
             [
                 [1, 0, 0, -0.05],
@@ -40,8 +40,9 @@ def main():
 
     
         # Compose transforms
+        rospy.loginfo("left_world_matrix: %s", left_world_matrix)
         base_world_matrix = np.matmul(base_left_matrix, left_world_matrix)
-        
+
         # Create a broadcaster for the transform from base_link_gt to world
         broadcaster = tf2_ros.TransformBroadcaster()
 
