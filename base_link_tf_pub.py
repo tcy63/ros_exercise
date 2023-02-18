@@ -29,7 +29,7 @@ def main():
         rotation = [left_world_trans.transform.rotation.x, left_world_trans.transform.rotation.y, left_world_trans.transform.rotation.z, left_world_trans.transform.rotation.w]
 
         left_world_matrix = t.fromTranslationRotation(translation, rotation)
-        
+
         left_base_matrix = np.array(
             [
                 [1, 0, 0, -0.05],
@@ -42,7 +42,6 @@ def main():
 
     
         # Compose transforms
-        rospy.loginfo("left_world_matrix: %s", left_world_matrix)
         base_world_matrix = np.matmul(base_left_matrix, left_world_matrix)
 
         # Create a broadcaster for the transform from base_link_gt to world
